@@ -1,6 +1,7 @@
-import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-expo";
-import { Stack } from "expo-router";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import { Stack, useRouter, useSegments } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect } from "react";
 
 // Fallback token cache using AsyncStorage
 const tokenCache = {
@@ -36,14 +37,31 @@ if (!publishableKey) {
   );
 }
 
+function RootLayoutNav() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (isSignedIn && inAuthGroup) {
+      router.replace('/');
+    } else if (!isSignedIn && !inAuthGroup) {
+      router.replace('/(auth)/sign-up');
+    }
+  }, [isSignedIn, isLoaded, segments]);
+
+  return <Stack screenOptions={{ headerShown: false }} />;
+}
+
 export default function RootLayout() {
   return (
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-        </Stack>
+        <RootLayoutNav />
       </ClerkLoaded>
     </ClerkProvider>
   );
