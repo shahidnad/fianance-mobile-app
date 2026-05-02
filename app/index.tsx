@@ -1,13 +1,17 @@
 import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useAuth, useUser } from "@clerk/clerk-expo";
-import { Redirect } from "expo-router";
-import { useEffect } from "react";
+import { Redirect, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
+import { Colors } from '../constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Index() {
   const { isSignedIn, isLoaded, signOut } = useAuth();
   const { user } = useUser();
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const syncUserToFirestore = async () => {
@@ -30,19 +34,42 @@ export default function Index() {
 
     if (isLoaded && isSignedIn) {
       syncUserToFirestore();
+      
+      // Check onboarding status
+      const checkOnboarding = async () => {
+        try {
+          const value = await AsyncStorage.getItem('hasSeenOnboarding');
+          if (value === 'true') {
+            setHasSeenOnboarding(true);
+          } else {
+            setHasSeenOnboarding(false);
+            // Redirect imperatively to avoid flash
+            setTimeout(() => {
+              router.replace('/welcome');
+            }, 0);
+          }
+        } catch (error) {
+          setHasSeenOnboarding(false);
+          setTimeout(() => {
+            router.replace('/welcome');
+          }, 0);
+        }
+      };
+      
+      checkOnboarding();
     }
   }, [isSignedIn, isLoaded, user]);
 
-  if (!isLoaded) {
+  if (!isLoaded || (isSignedIn && hasSeenOnboarding !== true)) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#4318FF" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
 
   if (!isSignedIn) {
-    return <Redirect href="/(auth)/sign-up" />;
+    return null;
   }
 
   return (
@@ -55,7 +82,13 @@ export default function Index() {
         <Text style={styles.cardSubText}>Your profile information has been synced to Firestore.</Text>
       </View>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={() => signOut()}>
+      <TouchableOpacity 
+        style={styles.signOutButton} 
+        onPress={async () => {
+          await AsyncStorage.removeItem('hasSeenOnboarding');
+          signOut();
+        }}
+      >
         <Text style={styles.signOutButtonText}>Sign Out</Text>
       </TouchableOpacity>
     </View>
@@ -71,22 +104,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#F4F7FE',
+    backgroundColor: Colors.background,
     justifyContent: "center",
   },
   title: {
     fontSize: 24,
-    color: '#A3AED0',
+    color: Colors.textMuted,
     marginBottom: 4,
   },
   name: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#2B3674',
+    color: Colors.text,
     marginBottom: 32,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     padding: 24,
     borderRadius: 20,
     shadowColor: '#000',
@@ -99,12 +132,12 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2B3674',
+    color: Colors.text,
     marginBottom: 8,
   },
   cardSubText: {
     fontSize: 15,
-    color: '#A3AED0',
+    color: Colors.textMuted,
     lineHeight: 22,
   },
   signOutButton: {

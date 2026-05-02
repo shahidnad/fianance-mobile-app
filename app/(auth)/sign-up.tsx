@@ -4,7 +4,9 @@ import { useSignUp, useOAuth } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
 import { useWarmUpBrowser } from '../../hooks/useWarmUpBrowser';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../constants/Colors';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 
@@ -56,7 +58,7 @@ export default function SignUpScreen() {
 
       if (completeSignUp.status === 'complete') {
         await setActive({ session: completeSignUp.createdSessionId });
-        router.replace('/');
+        // Navigation is now handled globally in _layout.tsx based on auth state
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2));
       }
@@ -69,10 +71,12 @@ export default function SignUpScreen() {
 
   const onGoogleSignUpPress = async () => {
     try {
-      const { createdSessionId, setActive } = await startOAuthFlow();
+      const { createdSessionId, setActive } = await startOAuthFlow({
+        redirectUrl: Linking.createURL('/(auth)/sign-up', { scheme: 'fiananceapp' }),
+      });
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
-        router.replace('/');
+        // Navigation is now handled globally in _layout.tsx based on auth state
       }
     } catch (err) {
       console.error('OAuth error', err);
@@ -95,7 +99,7 @@ export default function SignUpScreen() {
               <TextInput
                 value={code}
                 placeholder="Code..."
-                placeholderTextColor="#8A92A6"
+                placeholderTextColor={Colors.textMuted}
                 onChangeText={(code) => setCode(code)}
                 style={styles.input}
               />
@@ -130,7 +134,7 @@ export default function SignUpScreen() {
               <TextInput
                 value={firstName}
                 placeholder="First Name"
-                placeholderTextColor="#8A92A6"
+                placeholderTextColor={Colors.textMuted}
                 onChangeText={(name) => setFirstName(name)}
                 style={styles.input}
               />
@@ -141,7 +145,7 @@ export default function SignUpScreen() {
               <TextInput
                 value={lastName}
                 placeholder="Last Name"
-                placeholderTextColor="#8A92A6"
+                placeholderTextColor={Colors.textMuted}
                 onChangeText={(name) => setLastName(name)}
                 style={styles.input}
               />
@@ -153,7 +157,7 @@ export default function SignUpScreen() {
               autoCapitalize="none"
               value={emailAddress}
               placeholder="Email"
-              placeholderTextColor="#8A92A6"
+              placeholderTextColor={Colors.textMuted}
               onChangeText={(email) => setEmailAddress(email)}
               style={styles.input}
             />
@@ -164,7 +168,7 @@ export default function SignUpScreen() {
             <TextInput
               value={password}
               placeholder="Password"
-              placeholderTextColor="#8A92A6"
+              placeholderTextColor={Colors.textMuted}
               secureTextEntry={true}
               onChangeText={(password) => setPassword(password)}
               style={styles.input}
@@ -204,7 +208,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F7FE',
+    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 80,
     height: 80,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -237,12 +241,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#2B3674',
+    color: Colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#A3AED0',
+    color: Colors.textMuted,
     textAlign: 'center',
   },
   formContainer: {
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
     flex: 0.48,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     paddingHorizontal: 16,
     height: 60,
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     marginBottom: 16,
     paddingHorizontal: 16,
@@ -287,23 +291,23 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2B3674',
+    color: Colors.text,
   },
   primaryButton: {
-    backgroundColor: '#4318FF',
+    backgroundColor: Colors.primary,
     borderRadius: 16,
     height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    shadowColor: '#4318FF',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.card,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -315,10 +319,10 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0E5F2',
+    backgroundColor: Colors.border,
   },
   dividerText: {
-    color: '#A3AED0',
+    color: Colors.textMuted,
     paddingHorizontal: 16,
     fontSize: 14,
     fontWeight: '600',
@@ -327,7 +331,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.card,
     borderRadius: 16,
     height: 60,
     marginBottom: 24,
@@ -341,7 +345,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   googleButtonText: {
-    color: '#2B3674',
+    color: Colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -351,11 +355,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#A3AED0',
+    color: Colors.textMuted,
     fontSize: 15,
   },
   linkText: {
-    color: '#4318FF',
+    color: Colors.primary,
     fontSize: 15,
     fontWeight: '700',
   },
