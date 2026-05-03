@@ -42,7 +42,7 @@ export default function WelcomeScreen() {
   const completeOnboarding = async () => {
     try {
       await AsyncStorage.setItem('hasSeenOnboarding', 'true');
-      router.replace('/');
+      router.replace('/(tabs)');
     } catch (error) {
       console.error('Error saving onboarding state:', error);
     }
