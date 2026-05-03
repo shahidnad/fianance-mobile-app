@@ -13,8 +13,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_Y3VyaW91cy1wb3NzdW0tMzguY2xlcmsuYWNjb3VudHMuZGV2JA",
-        "EXPO_PUBLIC_GEMENI_API_KEY": "AIzaSyC2Rjj1PtxSK8Cgjew2HiNhooTQUBDQj8U"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "give your own clerk key",
+        "EXPO_PUBLIC_GEMENI_API_KEY": "give your own gemini key"
       }
     },
     "production": {}
