@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { Stack, useRouter, useSegments } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -32,9 +33,7 @@ const tokenCache = {
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 if (!publishableKey) {
-  throw new Error(
-    "Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env",
-  );
+  throw new Error("Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env");
 }
 
 function RootLayoutNav() {
@@ -45,24 +44,42 @@ function RootLayoutNav() {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const checkOnboarding = async () => {
+      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
+      const inAuthGroup = segments[0] === '(auth)';
+      const isWelcomeScreen = segments[0] === 'welcome';
 
-    if (isSignedIn && inAuthGroup) {
-      router.replace('/');
-    } else if (!isSignedIn && !inAuthGroup) {
-      router.replace('/(auth)/sign-up');
-    }
+      if (isSignedIn) {
+        if (!hasSeenOnboarding && !isWelcomeScreen) {
+          router.replace('/welcome');
+        } else if (hasSeenOnboarding && (inAuthGroup || isWelcomeScreen)) {
+          router.replace('/(tabs)');
+        }
+      } else if (!inAuthGroup) {
+        router.replace('/(auth)/sign-up');
+      }
+    };
+
+    checkOnboarding();
   }, [isSignedIn, isLoaded, segments]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
 
+import { ThemeProvider } from "../context/ThemeContext";
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 export default function RootLayout() {
   return (
-    <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-      <ClerkLoaded>
-        <RootLayoutNav />
-      </ClerkLoaded>
-    </ClerkProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+        <ClerkLoaded>
+          <ThemeProvider>
+            <RootLayoutNav />
+          </ThemeProvider>
+        </ClerkLoaded>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
 }
